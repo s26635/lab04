@@ -41,7 +41,9 @@ namespace LegacyApp
         public bool AddUser(string firstName, string lastName, string email, DateTime dateOfBirth, int clientId)
         {
             if (!ValidateUserInput(firstName, lastName, email, dateOfBirth))
+            {
                 return false;
+            }
 
             var client = _clientRepository.GetById(clientId);
 
@@ -49,8 +51,10 @@ namespace LegacyApp
 
             SetUserCreditLimit(user, client);
 
-            if (!IsUserCreditLimitSufficient(user))
+            if (!CheckCreditLimit(user))
+            {
                 return false;
+            }
 
             _userDataAccessAdapter.AddUser(user);
             return true;
@@ -58,15 +62,21 @@ namespace LegacyApp
 
         private bool ValidateUserInput(string firstName, string lastName, string email, DateTime dateOfBirth)
         {
-            return !string.IsNullOrEmpty(firstName) && !string.IsNullOrEmpty(lastName) && email.Contains("@") &&
-                   email.Contains(".") && CalculateAge(dateOfBirth) >= 21;
+            bool result = !string.IsNullOrEmpty(firstName) && !string.IsNullOrEmpty(lastName) && email.Contains("@") &&
+                          email.Contains(".") && CalculateAge(dateOfBirth) >= 21;
+            return result;
         }
 
         private int CalculateAge(DateTime dateOfBirth)
         {
             var now = DateTime.Now;
             int age = now.Year - dateOfBirth.Year;
-            if (now.Month < dateOfBirth.Month || (now.Month == dateOfBirth.Month && now.Day < dateOfBirth.Day)) age--;
+            
+            if (now.Month < dateOfBirth.Month || (now.Month == dateOfBirth.Month && now.Day < dateOfBirth.Day))
+            {
+                age--;
+            }
+
             return age;
         }
 
@@ -95,14 +105,15 @@ namespace LegacyApp
                 user.HasCreditLimit = true;
                 creditLimit *= 2;
                 user.CreditLimit = creditLimit;
-            }else
+            }
+            else
             {
                 user.HasCreditLimit = true;
                 user.CreditLimit = creditLimit;
             }
         }
 
-        private bool IsUserCreditLimitSufficient(User user)
+        private bool CheckCreditLimit(User user)
         {
             return !user.HasCreditLimit || user.CreditLimit >= 500;
         }
